@@ -1,6 +1,7 @@
 import { type NextPage } from "next";
 import Head from "next/head";
 import Link from "next/link";
+import { Timeline } from "../components/Timeline";
 import { signIn, signOut, useSession } from "next-auth/react";
 
 import { api } from "../utils/api";
@@ -18,7 +19,7 @@ const Home: NextPage = () => {
       <div>
         <h1>Hello from TRPC</h1>
         <button onClick={() => signIn()}>Login</button>
-        {JSON.stringify(session)}
+        <Timeline />
       </div>
     </>
   );
