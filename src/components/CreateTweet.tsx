@@ -1,4 +1,3 @@
-import { type NextPage } from "next";
 import { useState } from "react";
 import { object, string } from "zod";
 import { api } from "../utils/api";
@@ -10,7 +9,7 @@ export const tweetSchema = object({
     .min(10).max(280)
 })
 
-export const CreateTweet:NextPage = () =>{
+export const CreateTweet = () =>{
 
     const [text, setText] = useState("")
     const [error, setError] = useState("")
@@ -33,10 +32,10 @@ export const CreateTweet:NextPage = () =>{
     return (
         <>
         {error && <div>{JSON.stringify(error)}</div>}
-        <form onSubmit={sendTweet} className="w-full flex flex-col border-2 rounded-md p-4">
-            <textarea className="w-full" onChange={(e)=> setText(e.target.value)} />
-            <div>
-                <button type="submit" >Tweet</button>
+        <form onSubmit={sendTweet} className="mb-4 w-full flex flex-col border-2 rounded-md p-4">
+            <textarea className="w-full p-4 shadow" onChange={(e)=> setText(e.target.value)} />
+            <div className="flex justify-end">
+                <button className="mt-2 bg-primary rounded-md px-4 py-2 text-white hover:border-primary border-2 hover:text-primary hover:bg-transparent" type="submit" >Tweet</button>
             </div>
         </form>
         </>

@@ -1,7 +1,6 @@
 import { type NextPage } from "next";
-import React from "react";
 
-const Container: NextPage = ({children, classNames = ""} : 
+const Container = ({children, classNames = ""} : 
     {
         children: React.ReactNode;
         classNames?: string;

@@ -7,6 +7,7 @@ import Container from "../components/Container";
 import { api } from "../utils/api";
 
 import "../styles/globals.css";
+import LoggedOutBanner from "../components/LoggedOutBanner";
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
@@ -14,11 +15,12 @@ const MyApp: AppType<{ session: Session | null }> = ({
 }) => {
   return (
     <SessionProvider session={session}>
-      <main>
-        <Container>
+      <Container>
+        <main>
           <Component {...pageProps} />
-        </Container>
-      </main>
+        </main>
+      </Container>
+      <LoggedOutBanner/>
     </SessionProvider>
   );
 };
