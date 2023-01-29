@@ -1,4 +1,4 @@
-import { api, RouterOutputs } from "../utils/api";
+import { api, RouterInputs, RouterOutputs } from "../utils/api";
 import { CreateTweet } from "./CreateTweet";
 import Image from "next/image";
 import dayjs from "dayjs";
@@ -6,7 +6,10 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import updateLocal from "dayjs/plugin/updateLocale";
 import { useState, useEffect } from "react";
 import {AiFillHeart} from "react-icons/ai";
-import { QueryClient, useQueryClient } from "@tanstack/react-query";
+import { InfiniteData, QueryClient, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+
+const LIMIT = 10;
 
 dayjs.extend(relativeTime);
 dayjs.extend(updateLocal);
@@ -52,8 +55,9 @@ function useScrollPosition() {
     return scrollPosition
 }
 
-function updateCache({client, variables, data, action}: {
+function updateCache({client, variables, data, action, input}: {
     client: QueryClient;
+    input: RouterInputs["tweet"]["timeline"];
     variables: {
         tweetId: string;
     };
@@ -65,31 +69,58 @@ function updateCache({client, variables, data, action}: {
     client.setQueryData([
         ["tweet", "timeline"],
         {
-            "input": {
-            "limit": 10
-            },
-            "type": "infinite"
+            input,
+            type: "infinite"
         },
     ], 
     (oldData)=> {
         console.log({oldData});
-    })
+
+        const newData = oldData as InfiniteData<RouterOutputs["tweet"]["timeline"]>;
+
+        const value = action === "like" ? 1 : -1;
+
+        const newTweets = newData.pages.map((page) => {
+            return {
+            tweets: page.tweets.map((tweet) => {
+                if (tweet.id === variables.tweetId) {
+                return {
+                    ...tweet,
+                    likes: action === "like" ? [data.userId] : [],
+                    _count: {
+                        likes: tweet._count.likes + value,
+                    },
+                };
+                }
+
+                return tweet;
+            }),
+            };
+        });
+
+        return {
+            ...newData,
+            pages: newTweets,
+        };
+    }
+  );
 }
 
 
-function Tweet({ tweet, client }: {
+function Tweet({ tweet, client, input }: {
     tweet: RouterOutputs["tweet"]["timeline"]["tweets"][number];
     client: QueryClient;
+    input: RouterInputs["tweet"]["timeline"];
 }) {
 
     const likeMutation = api.tweet.like.useMutation({
         onSuccess: (data, variables) => {
-            updateCache({client, data, variables, action: "like"})
+            updateCache({client, data, variables, input, action: "like"})
         }
     }).mutateAsync;
     const unlikeMutation = api.tweet.unlike.useMutation({
         onSuccess: (data, variables) => {
-            updateCache({client, data, variables, action: "unlike"})
+            updateCache({client, data, variables, input,  action: "unlike"})
         }
     }).mutateAsync;
 
@@ -108,7 +139,9 @@ function Tweet({ tweet, client }: {
             )}
             <div className="ml-2">
                 <div className="flex items-center">
-                    <p className="font-bold">{tweet.author.name}</p>
+                    <p className="font-bold">
+                        <Link href={`/${tweet.author.name}`}>{tweet.author.name}</Link>
+                    </p>
                     <p className="text-sm text-gray-500"> - {dayjs(tweet.createdAt).fromNow()}</p>
                 </div>
                 <div className="">{tweet.text}</div>
@@ -116,7 +149,7 @@ function Tweet({ tweet, client }: {
         </div>
         <div className="mt-4 flex p-2 items-center">
             <AiFillHeart
-                className="cursor-pointer	" 
+                className="cursor-pointer" 
                 color={hasLiked ? "red" : "gray"} 
                 size="1.5rem" 
                 onClick={()=> {
@@ -132,18 +165,24 @@ function Tweet({ tweet, client }: {
                     })      
                 }}
             />
-            <span className="text-sm text-gray-500">{10}</span>
+            <span className="text-sm text-gray-500">{tweet._count.likes}</span>
         </div>
     </div>
 }
 
-export const Timeline = () =>{
+export const Timeline = ({
+    where={},}:
+    {
+        where: RouterInputs["tweet"]["timeline"]["where"]
+    }) =>{
+
     const scrollPosition = useScrollPosition();
     
     const {data, hasNextPage, fetchNextPage, isFetching} = 
-    api.tweet.timeline.useInfiniteQuery({
-        limit: 10,
-     }, {
+        api.tweet.timeline.useInfiniteQuery({
+            limit: LIMIT,
+            where,
+        }, {
          getNextPageParam: (lastPage) => lastPage.nextCursor,
         });
         
@@ -162,7 +201,14 @@ export const Timeline = () =>{
             <CreateTweet></CreateTweet>
             <div className="border-l-2 border-r-2 border-t-2 border-gray-500">
                 {tweets.map((tweet) => {
-                    return <Tweet key={tweet.id} tweet={tweet} client={client}/>
+                    return <Tweet 
+                        key={tweet.id} 
+                        tweet={tweet} 
+                        client={client} 
+                        input={{
+                            where,
+                            limit: LIMIT,
+                    }}/>
                 })}
 
                 {!hasNextPage && <p>No more tweets left to load</p>}
