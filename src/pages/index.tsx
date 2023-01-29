@@ -16,7 +16,7 @@ const Home: NextPage = () => {
         <link rel="icon" href="/favicon.ico" />
       </Head>
       <div>
-        <h1>Hello from TRPC</h1>
+        <p>Tweet here:</p>
         <Timeline />
       </div>
     </>
